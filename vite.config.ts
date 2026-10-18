@@ -6,3 +6,4 @@ export default defineConfig({
   base: '/261020-K-PlanificaforTostadoCafe/',
   test: { environment: 'jsdom' }
 })
+
