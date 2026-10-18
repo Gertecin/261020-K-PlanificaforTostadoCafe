@@ -3,7 +3,6 @@
 Aplicación web mobile-first para planificar el tueste de café en una tostaduría costarricense que trabaja con microproductores y vende por suscripción (club de café). Calcula qué envíos caen en una semana, suma los kilos tostados por microlote, los convierte a café verde según la merma de cada café, parte ese verde en tandas que entren en el tostador, las distribuye en los días de tueste y controla el inventario de verde a cuatro semanas. La usa el tostador en la tostaduría, no el cliente final.
 
 ## URL de previsualización
-
 https://gertecin.github.io/261020-K-PlanificaforTostadoCafe/
 
 ## Cómo correr y compilar
