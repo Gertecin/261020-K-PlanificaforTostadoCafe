@@ -76,7 +76,6 @@ export function calcularVerdeNecesario(gramosTostados: number, mermaPct: number)
   const mermaDecimas = Math.round(mermaPct * 10);
   const denominador = 1000 - mermaDecimas;
   if (denominador <= 0) return gramosTostados;
-  // ceil(gramosTostados / (denominador/1000) / 500) * 500, sin coma flotante
   return Math.ceil((gramosTostados * 1000) / (denominador * 500)) * 500;
 }
 
@@ -317,5 +316,5 @@ export function formatearKg(kg: number, decimales = 1): string {
 }
 
 export function formatearColones(monto: number): string {
-  return '₡' + monto.toLocaleString('es-CR');
+  return '₡' + monto.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }

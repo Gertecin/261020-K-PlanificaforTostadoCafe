@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useLocalStorage } from '../../state/useLocalStorage';
 import { seedData } from '../../data/seed';
+import { AppState } from '../../lib/types';
 
 beforeEach(() => { localStorage.clear(); });
 
@@ -14,9 +15,9 @@ describe('useLocalStorage', () => {
   it('persiste cambios', () => {
     const { result } = renderHook(() => useLocalStorage());
     act(() => {
-      result.current.updateState(prev => ({
+      result.current.updateState((prev: AppState) => ({
         ...prev,
-        microlotes: prev.microlotes.map(m => m.id === 'm1' ? { ...m, verdeDisponibleKg: 999 } : m)
+        microlotes: prev.microlotes.map((m) => m.id === 'm1' ? { ...m, verdeDisponibleKg: 999 } : m)
       }));
     });
     const s = JSON.parse(localStorage.getItem('tostado-cafe:v1') || '{}');
@@ -37,7 +38,7 @@ describe('useLocalStorage', () => {
 
   it('resetData restaura el seed', () => {
     const { result } = renderHook(() => useLocalStorage());
-    act(() => result.current.updateState(prev => ({ ...prev, microlotes: [] })));
+    act(() => result.current.updateState((prev: AppState) => ({ ...prev, microlotes: [] })));
     act(() => result.current.resetData());
     expect(result.current.state.microlotes.length).toBe(seedData.microlotes.length);
   });

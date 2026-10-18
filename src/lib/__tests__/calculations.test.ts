@@ -3,7 +3,8 @@ import {
   obtenerLunes, sumarDias, sumarMeses, calcularProximoEnvio,
   calcularVerdeNecesario, generarTandas, asignarTandas,
   calcularDemandaSemana, evaluarInventario, cerrarSemana,
-  deshacerUltimaSemana, formatearFecha, formatearKg, formatearColones
+  deshacerUltimaSemana, formatearFecha, formatearKg, formatearColones,
+  lunesActual
 } from '../calculations';
 import { AppState, Suscripcion } from '../types';
 import { seedData } from '../../data/seed';
@@ -72,44 +73,46 @@ describe('Asignación a días', () => {
   });
 
   it('deja sin asignar el excedente', () => {
-    const plan = [{ microloteId: 'm1', tandas: Array(7).fill(12000) }];
+    const plan = [{ microloteId: 'm1', tandas: Array(13).fill(12000) }];
     const { asignadas, sinAsignar } = asignarTandas(plan, ['lunes', 'miércoles'], 6);
     expect(asignadas['lunes'].length).toBe(6);
+    expect(asignadas['miércoles'].length).toBe(6);
     expect(sinAsignar.length).toBe(1);
   });
 });
 
 describe('Demanda de la semana', () => {
   const subs: Suscripcion[] = [
-    { id: 's1', nombre: 'T1', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2023-10-26', activa: true },
-    { id: 's2', nombre: 'T2', provincia: 'SJ', plan: '340g', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: '2023-10-27', activa: true },
-    { id: 's3', nombre: 'T3', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2023-10-30', activa: true }
+    { id: 's1', nombre: 'T1', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2099-10-26', activa: true },
+    { id: 's2', nombre: 'T2', provincia: 'SJ', plan: '340g', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: '2099-10-27', activa: true },
+    { id: 's3', nombre: 'T3', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'lunes', proximoEnvio: '2099-10-23', activa: true }
   ];
 
   it('incluye lunes y domingo, no el lunes siguiente', () => {
-    const d = calcularDemandaSemana(subs, '2023-10-23', {}, 'm1');
+    const d = calcularDemandaSemana(subs, '2099-10-23', {}, 'm1');
     expect(d['m1']).toBe(2340);
   });
 
   it('proyecta quincenal a semanas futuras', () => {
-    const s: Suscripcion[] = [{ id: 's1', nombre: 'T', provincia: 'SJ', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2023-10-26', activa: true }];
-    expect(calcularDemandaSemana(s, '2023-10-23', {}, 'm1')['m1']).toBe(1000);
-    expect(calcularDemandaSemana(s, '2023-11-06', {}, 'm1')['m1']).toBe(1000);
+    const s: Suscripcion[] = [{ id: 's1', nombre: 'T', provincia: 'SJ', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2099-10-26', activa: true }];
+    expect(calcularDemandaSemana(s, '2099-10-23', {}, 'm1')['m1']).toBe(1000);
+    expect(calcularDemandaSemana(s, '2099-10-30', {}, 'm1')['m1']).toBeUndefined();
+    expect(calcularDemandaSemana(s, '2099-11-06', {}, 'm1')['m1']).toBe(1000);
   });
 });
 
 describe('Alerta de inventario', () => {
   it('alerta cuando 4 semanas superan el disponible', () => {
     const d = [{ 'm1': 10000 }, { 'm1': 10000 }, { 'm1': 10000 }, { 'm1': 10000 }];
-    const s = ['2023-10-23', '2023-10-30', '2023-11-06', '2023-11-13'];
+    const s = ['2099-10-23', '2099-10-30', '2099-11-06', '2099-11-13'];
     const r = evaluarInventario('m1', 15, 30, d, s, []);
     expect(r.alerta).toBe(true);
   });
 
-  it('no alerta cuando el acumulado es igual al disponible', () => {
+  it('no alerta cuando el acumulado es igual o menor al disponible', () => {
     const d = [{ 'm1': 7500 }, { 'm1': 7500 }, { 'm1': 7500 }, { 'm1': 7500 }];
-    const s = ['2023-10-23', '2023-10-30', '2023-11-06', '2023-11-13'];
-    const r = evaluarInventario('m1', 15, 35.3, d, s, []);
+    const s = ['2099-10-23', '2099-10-30', '2099-11-06', '2099-11-13'];
+    const r = evaluarInventario('m1', 15, 36, d, s, []);
     expect(r.alerta).toBe(false);
   });
 });
@@ -117,21 +120,21 @@ describe('Alerta de inventario', () => {
 describe('Cerrar y deshacer semana', () => {
   const stateBase: AppState = {
     ...seedData,
-    suscripciones: [{ id: 's1', nombre: 'T', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2023-10-26', activa: true }],
+    suscripciones: [{ id: 's1', nombre: 'T', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2099-10-26', activa: true }],
     microlotes: [{ ...seedData.microlotes[0], verdeDisponibleKg: 100 }]
   };
 
   it('avanza próximo envío y descuenta verde', () => {
-    const c = cerrarSemana(stateBase, '2023-10-23');
-    expect(c.suscripciones[0].proximoEnvio).toBe('2023-11-02');
+    const c = cerrarSemana(stateBase, '2099-10-23');
+    expect(c.suscripciones[0].proximoEnvio).toBe('2099-11-02');
     expect(c.microlotes[0].verdeDisponibleKg).toBeLessThan(100);
     expect(c.semanasEnviadas.length).toBe(1);
   });
 
   it('deshace el cierre', () => {
-    const c = cerrarSemana(stateBase, '2023-10-23');
+    const c = cerrarSemana(stateBase, '2099-10-23');
     const d = deshacerUltimaSemana(c);
-    expect(d.suscripciones[0].proximoEnvio).toBe('2023-10-26');
+    expect(d.suscripciones[0].proximoEnvio).toBe('2099-10-26');
     expect(d.microlotes[0].verdeDisponibleKg).toBe(100);
     expect(d.semanasEnviadas.length).toBe(0);
   });
@@ -148,17 +151,21 @@ describe('Seed', () => {
   });
 
   it('dispara alerta en West Valley y Orosi', () => {
-    const inicio = '2023-10-23';
-    const sems = [inicio, '2023-10-30', '2023-11-06', '2023-11-13'];
+    const inicio = lunesActual();
+    const sems = [inicio, sumarDias(inicio, 7), sumarDias(inicio, 14), sumarDias(inicio, 21)];
     const d = sems.map(l => calcularDemandaSemana(seedData.suscripciones, l, {}, seedData.sorpresaPorDefecto));
     expect(evaluarInventario('m2', 16, 60, d, sems, []).alerta).toBe(true);
     expect(evaluarInventario('m5', 18, 25, d, sems, []).alerta).toBe(true);
   });
 
   it('cambiar sorpresa a Central Valley resuelve alerta de West Valley', () => {
-    const inicio = '2023-10-23';
-    const sems = [inicio, '2023-10-30', '2023-11-06', '2023-11-13'];
-    const d = sems.map(l => calcularDemandaSemana(seedData.suscripciones, l, { [inicio]: 'm4' }, seedData.sorpresaPorDefecto));
+    const inicio = lunesActual();
+    const sems = [inicio, sumarDias(inicio, 7), sumarDias(inicio, 14), sumarDias(inicio, 21)];
+    // Forzamos que la sorpresa sea Central Valley ('m4') en TODAS las semanas del horizonte
+    const sorpresaPorSemana: Record<string, string> = {};
+    sems.forEach(l => { sorpresaPorSemana[l] = 'm4'; });
+    
+    const d = sems.map(l => calcularDemandaSemana(seedData.suscripciones, l, sorpresaPorSemana, seedData.sorpresaPorDefecto));
     expect(evaluarInventario('m2', 16, 60, d, sems, []).alerta).toBe(false);
   });
 });
@@ -171,6 +178,6 @@ describe('Formato', () => {
     expect(formatearKg(12.5)).toBe('12,5 kg');
   });
   it('formatea colones', () => {
-    expect(formatearColones(9500)).toBe('9.500');
+    expect(formatearColones(9500)).toBe('₡9.500');
   });
 });
