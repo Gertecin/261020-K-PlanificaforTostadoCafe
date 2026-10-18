@@ -85,7 +85,7 @@ describe('Demanda de la semana', () => {
   const subs: Suscripcion[] = [
     { id: 's1', nombre: 'T1', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2099-10-26', activa: true },
     { id: 's2', nombre: 'T2', provincia: 'SJ', plan: '340g', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: '2099-10-27', activa: true },
-    { id: 's3', nombre: 'T3', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'lunes', proximoEnvio: '2099-10-23', activa: true }
+    { id: 's3', nombre: 'T3', provincia: 'SJ', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: '2099-10-23', activa: true }
   ];
 
   it('incluye lunes y domingo, no el lunes siguiente', () => {
