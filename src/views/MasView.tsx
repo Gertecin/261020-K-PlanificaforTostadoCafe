@@ -6,6 +6,7 @@ interface Props {
   state: AppState;
   updateState: (u: AppState | ((p: AppState) => AppState)) => void;
   resetData: () => void;
+  onLogout: () => void;
 }
 
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
@@ -108,7 +109,7 @@ function EditorTostador({ config, onSave }: { config: TostadorConfig; onSave: (c
   );
 }
 
-export default function MasView({ state, updateState, resetData }: Props) {
+export default function MasView({ state, updateState, resetData, onLogout }: Props) {
   const [seccion, setSeccion] = useState<'microlotes' | 'tostador' | 'historial' | 'datos'>('microlotes');
   const secciones = [
     { id: 'microlotes' as const, label: 'Microlotes' },
@@ -225,6 +226,13 @@ export default function MasView({ state, updateState, resetData }: Props) {
           </div>
 
           <p className="text-[10px] text-cafe-dark/40 text-center">Libreta de Tueste · v1.0 · Hecho para tostadurías de especialidad</p>
+
+          <button
+            onClick={onLogout}
+            className="w-full min-h-[44px] rounded-lg border border-cafe/20 text-cafe text-sm font-bold active:bg-cafe/5 mt-6"
+          >
+            Cerrar sesión de administrador
+          </button>
         </section>
       )}
     </div>

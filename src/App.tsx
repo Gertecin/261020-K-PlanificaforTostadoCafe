@@ -5,14 +5,15 @@ import TuesteView from './views/TuesteView';
 import InventarioView from './views/InventarioView';
 import SuscripcionesView from './views/SuscripcionesView';
 import MasView from './views/MasView';
+import { ADMIN_PASSWORD } from './constants';
 
-type Tab = 'semana' | 'tueste' | 'inventario' | 'suscripciones' | 'mas';
+type Tab = 'semana' | 'tueste' | 'inventario' | 'suscripciones' | 'admin';
 const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'semana', icon: '📅', label: 'Semana' },
   { id: 'tueste', icon: '🔥', label: 'Tueste' },
   { id: 'inventario', icon: '📦', label: 'Inventario' },
   { id: 'suscripciones', icon: '👥', label: 'Suscrip.' },
-  { id: 'mas', icon: '⚙️', label: 'Más' }
+  { id: 'admin', icon: '⚙️', label: 'Más' }
 ];
 
 function leerTab(): Tab {
@@ -23,9 +24,19 @@ function leerTab(): Tab {
 export default function App() {
   const { state, updateState, resetData, isCorrupted } = useLocalStorage();
   const [tab, setTab] = useState<Tab>(leerTab);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
-    const onHash = () => setTab(leerTab());
+    const onHash = () => {
+      const newTab = leerTab();
+      setTab(newTab);
+      if (newTab !== 'admin') {
+        setPasswordInput('');
+        setPasswordError('');
+      }
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -33,6 +44,21 @@ export default function App() {
   const irA = (t: Tab) => {
     setTab(t);
     window.location.hash = t;
+  };
+
+  const handleLogin = () => {
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAdminAuthenticated(true);
+      setPasswordError('');
+      setPasswordInput('');
+    } else {
+      setPasswordError('Clave incorrecta. Intenta de nuevo.');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdminAuthenticated(false);
+    irA('semana');
   };
 
   return (
@@ -56,7 +82,43 @@ export default function App() {
         {tab === 'tueste' && <TuesteView state={state} />}
         {tab === 'inventario' && <InventarioView state={state} updateState={updateState} />}
         {tab === 'suscripciones' && <SuscripcionesView state={state} updateState={updateState} />}
-        {tab === 'mas' && <MasView state={state} updateState={updateState} resetData={resetData} />}
+        
+        {tab === 'admin' && !isAdminAuthenticated && (
+          <div className="p-4 space-y-4 flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="w-16 h-16 bg-cafe/10 rounded-full flex items-center justify-center text-3xl mb-2">🔒</div>
+            <h2 className="font-display font-bold text-2xl text-cafe">Acceso Restringido</h2>
+            <p className="text-sm text-cafe-dark/60 text-center px-4">
+              Ingresa la clave de administrador para acceder a la configuración de la tostaduría.
+            </p>
+            <input
+              type="password"
+              inputMode="text"
+              value={passwordInput}
+              onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(''); }}
+              placeholder="Clave de acceso"
+              className="w-full max-w-xs p-3 rounded-lg border border-cafe/20 bg-white text-sm min-h-[44px] text-center tabular-nums focus:outline-none focus:ring-2 focus:ring-cafetal"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
+              autoFocus
+            />
+            {passwordError && <p className="text-sm text-alerta font-medium">{passwordError}</p>}
+            <button
+              onClick={handleLogin}
+              className="w-full max-w-xs min-h-[44px] rounded-lg bg-cafetal text-white font-bold text-sm active:scale-95 transition-transform"
+            >
+              Ingresar
+            </button>
+            <button
+              onClick={() => irA('semana')}
+              className="text-sm text-cafe-dark/50 underline mt-2"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        )}
+
+        {tab === 'admin' && isAdminAuthenticated && (
+          <MasView state={state} updateState={updateState} resetData={resetData} onLogout={handleLogout} />
+        )}
       </main>
 
       <nav aria-label="Navegación principal" className="fixed bottom-0 left-0 right-0 bg-white border-t border-cafe/15 shadow-[0_-4px_12px_rgba(42,27,18,0.06)] z-50">
