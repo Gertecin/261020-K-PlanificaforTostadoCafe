@@ -5,4 +5,4 @@
 // valor de la constante ADMIN_PASSWORD abajo y guarda el archivo.
 // Recuerda ejecutar 'npm run build' y hacer commit/push después de cambiarla.
 
-export const ADMIN_PASSWORD = 'tostador2024';
+export const ADMIN_PASSWORD = 'GERtostado2026';
