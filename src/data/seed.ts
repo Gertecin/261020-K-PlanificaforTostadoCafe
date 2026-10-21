@@ -1,5 +1,5 @@
 import { AppState } from '../lib/types';
-import { obtenerLunes, sumarDias, sumarMeses } from '../lib/calculations';
+import { obtenerLunes, sumarDias } from '../lib/calculations';
 
 const hoy = new Date().toISOString().split('T')[0];
 const lunesHoy = obtenerLunes(hoy);
@@ -133,7 +133,7 @@ export const seedData: AppState = {
     { id: 's117', nombre: 'Sandra Milena Calvo', provincia: 'Guanacaste', plan: '340g', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
     { id: 's118', nombre: 'Tomás Alejandro Mora', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
     { id: 's119', nombre: 'Caso Atrasado', provincia: 'San José', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, -4), activa: true },
-    { id: 's120', nombre: 'Caso Día Inválido', provincia: 'Heredia', plan: '340g', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'lunes', proximoEnvio: lunesHoy, activa: true }
+    { id: 's120', nombre: 'Caso Día Inválido', provincia: 'Heredia', plan: '340g', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: lunesHoy, activa: true }
   ],
   config: {
     capacidadTandaKg: 12,
