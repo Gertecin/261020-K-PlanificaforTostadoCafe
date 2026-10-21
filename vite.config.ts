@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/261020-K-PlanificaforTostadoCafe/',
-  test: { environment: 'jsdom' }
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets'
+  }
 })
-
