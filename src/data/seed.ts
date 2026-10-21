@@ -7,7 +7,7 @@ const lunesHoy = obtenerLunes(hoy);
 export const seedData: AppState = {
   microlotes: [
     { id: 'm1', nombre: 'Tarrazú lavado La Pastora', productor: 'Finca La Pastora', proceso: 'Lavado', mermaPct: 15, verdeDisponibleKg: 180, color: '#8B5E3C', sigla: 'TAR' },
-    { id: 'm2', nombre: 'West Valley Naranjo honey', productor: 'Finca Naranjo', proceso: 'Honey', mermaPct: 16, verdeDisponibleKg: 40, color: '#D4A373', sigla: 'WV' },
+    { id: 'm2', nombre: 'West Valley Naranjo honey', productor: 'Finca Naranjo', proceso: 'Honey', mermaPct: 16, verdeDisponibleKg: 35, color: '#D4A373', sigla: 'WV' },
     { id: 'm3', nombre: 'Brunca natural Pérez Zeledón', productor: 'Finca Brunca', proceso: 'Natural', mermaPct: 17, verdeDisponibleKg: 45, color: '#A98467', sigla: 'BRU' },
     { id: 'm4', nombre: 'Central Valley Poás lavado', productor: 'Finca Poás', proceso: 'Lavado', mermaPct: 14, verdeDisponibleKg: 120, color: '#6B8E23', sigla: 'CV' },
     { id: 'm5', nombre: 'Orosi anaeróbico', productor: 'Finca Orosi', proceso: 'Anaeróbico', mermaPct: 18, verdeDisponibleKg: 25, color: '#556B2F', sigla: 'ORO' },
