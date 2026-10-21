@@ -8,28 +8,21 @@ https://gertecin.github.io/261020-K-PlanificaforTostadoCafe/
 ## Cómo correr y compilar
 
 ### Requisitos
-
 - Node.js 18+ (descargar en https://nodejs.org)
 - npm (viene incluido con Node.js)
 
 ### Pasos
-
 1. Clonar el repositorio
    git clone https://github.com/Gertecin/261020-K-PlanificaforTostadoCafe.git
    cd 261020-K-PlanificaforTostadoCafe
-
 2. Instalar dependencias
    npm install
-
 3. Iniciar servidor de desarrollo
    npm run dev
-
 4. Compilar para producción
    npm run build
-
 5. Vista previa del build
    npm run preview
-
 6. Ejecutar tests
    npm run test
 
@@ -64,12 +57,28 @@ location.reload()
 
 O desde la aplicación: Más → Datos → Restaurar datos de ejemplo.
 
+### Acceso para acceder a 'Más': 
+GERtostado2026
+
+### Como modificar la clave de 'Más': 
+En el archio /src/constants.ts , cambiar la clave por la nueva:
+
+estado inicial 
+export const ADMIN_PASSWORD = 'GERtostado2026';
+
+cambia la clave por la nueva por ejemplo 'NuevoPass2026'
+export const ADMIN_PASSWORD = 'NuevoPass2026';
+
+Compilar y subir cambios a Github
+
+Nota de seguridad: Dado que esta es una aplicación sin backend, la clave está visible en el código fuente del navegador
+Puede evitar modificaciones accidentales por parte de usuarios finales o clientes pero no se considera un sistema de seguridad. 
+
 ## Reglas de Negocio
 
 ### Envíos de la semana
 
 Una suscripción activa tiene envío en la semana S si su proximoEnvio cae entre el lunes y el domingo de S, ambos inclusive. Para semanas futuras se proyecta avanzando la fecha según la frecuencia:
-
 - Semanal: +7 días
 - Quincenal: +14 días
 - Mensual: +1 mes (mismo día del mes siguiente; si no existe, el último día de ese mes: 31/01 pasa a 28/02, o a 29/02 en año bisiesto)
@@ -144,7 +153,7 @@ Cambiar el microlote de la sorpresa de una semana recalcula de inmediato la dema
     │       ├── calculations.test.ts
     │       └── useLocalStorage.test.ts
     ├── data/
-    │   └── seed.ts           # Datos de ejemplo (100 suscripciones)
+    │   └── seed.ts           # Datos de ejemplo (120 suscripciones)
     ├── state/
     │   └── useLocalStorage.ts # Hook de persistencia con clave versionada
     └── views/
@@ -164,19 +173,19 @@ La app inicia con:
   - Central Valley Poás lavado (14% / 120 kg)
   - Orosi anaeróbico (18% / 25 kg)
   - Guanacaste peaberry (15% / 40 kg)
-- 100 suscripciones con nombres costarricenses creíbles y provincias de todo el país
-- 20% en "sorpresa" (20 suscripciones)
+- 120 suscripciones con nombres costarricenses creíbles y provincias de todo el país
+- 22% en "sorpresa" (26 suscripciones)
 - Sorpresa por defecto: West Valley Naranjo honey
 - Tostador: 12 kg de verde por tanda, lunes y miércoles, hasta 6 tandas por día
 
-Alertas intencionales: West Valley (60 kg) y Orosi (25 kg) disparan alerta de inventario en el plan de 4 semanas. Cambiar la "Sorpresa del Tostador" a Central Valley Poás resuelve la alerta de West Valley.
+Alertas intencionales: West Valley (35 kg) y Orosi (25 kg) disparan alerta de inventario en el plan de 4 semanas. 
+La opcion del mensaje de  Cambiar la "Sorpresa del Tostador" al microlote con mayor stock en el caso de ejemplo Central Valley Poás  resuelve la alerta de West Valley. O entrar al inventario y “comprar” del microlote en falta.
 
 Restauración: Desde Más → Datos → Restaurar datos de ejemplo se vuelven a los valores originales.
 
 ## Decisiones de Diseño
 
 ### Paleta
-
 - #5A3A28 (café tostado): color primario y cabeceras
 - #FFFFFF (blanco): fondos de tarjetas
 - #2F4A3A (verde cafetal): confirmaciones y acciones secundarias
@@ -185,20 +194,33 @@ Restauración: Desde Más → Datos → Restaurar datos de ejemplo se vuelven a 
 - #FAF9F6 (fondo cálido): fondo general
 
 ### Tipografía
-
 - Poppins (títulos): font-display, font-bold
 - Inter (texto): font-sans, con tabular-nums para alineación perfecta de cifras
 
 ### Colores por microlote
-
 Cada microlote tiene un color propio, reconocible y no rojo, más una letra o sigla (TAR, WV, BRU, CV, ORO, GUA), para no depender solo del color.
 
 ### Ámbar en lugar de rojo
-
 Las alertas se resuelven con un ámbar oscuro derivado (#92400E), siempre con ícono y texto además del color. Nunca se usa rojo para ningún texto ni cantidad.
 
-## Notas para el Desarrollador de Backend
+### Funcionalidades adicionales implementadas
 
+#### Protección del panel de administración
+El panel "Más" (ruta `#/admin`) está protegido por clave de acceso. ‘GERtostado2026’ y se almacena en ‘src/constants.ts`
+Para cambiarla, edita ese archivo y haz commit/push.
+
+> ⚠️ Nota de seguridad: al ser una app frontend-only, la clave es visible en el código fuente del navegador. Esta protección evita modificaciones accidentales, no es un sistema de seguridad de grado bancario.
+
+#### Ajuste masivo de fechas atrasadas
+En la vista "Suscripciones", cuando hay suscriptores con `proximoEnvio` fuera de rango (atrasados o en día no válido), aparece un botón ámbar "🔄 Ajustar X atrasado(s)" que corrige todos a la vez. El ajuste individual por suscriptor sigue disponible.
+
+#### Limpiar datos de la tostaduría
+En Más → Datos, se agregó el botón "🗑️ Limpiar todos los datos" que pone las suscripciones y el inventario a cero, dejando un día de tueste base. Ideal para empezar de cero sin perder la configuración. Los datos de ejemplo se recuperan con el botón "Restaurar datos de ejemplo".
+
+#### Validación de fechas en creación de suscriptores
+Al crear o editar un suscriptor, el sistema valida que `proximoEnvio` caiga en un día de despacho válido (jueves o viernes). Si no, muestra un botón de ajuste inmediato.
+
+## Notas para el Desarrollador de Backend
 Esta aplicación fue construida sin backend. Toda la lógica de negocio y la persistencia corren en el cliente mediante localStorage.
 
 ### Qué está simulado
@@ -222,10 +244,11 @@ Los tests cubren:
 - Demanda de la semana (proyección de frecuencias)
 - Alerta de inventario (detección de déficit)
 - Cierre y deshacer de semana
-- Seed (100 suscripciones, 20% sorpresa, alertas correctas)
+- Seed (120 suscripciones, 22% sorpresa, alertas correctas)
 - Persistencia (guardar, recargar, datos corruptos)
 
 Ejecutar: npm run test
 
 ## Licencia
 MIT
+
