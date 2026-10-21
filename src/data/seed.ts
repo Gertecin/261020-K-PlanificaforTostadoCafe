@@ -1,115 +1,140 @@
-import { AppState, Frecuencia, Plan, Suscripcion } from '../lib/types';
-import { ajustarAlProximoDiaDespacho, lunesActual, sumarDias, sumarMeses } from '../lib/calculations';
+import { AppState } from '../lib/types';
+import { obtenerLunes, sumarDias, sumarMeses } from '../lib/calculations';
 
-const base = lunesActual();
-
-const nombres = [
-  'María Fernanda Rodríguez','José Luis Vargas','Ana Lucía Jiménez','Carlos Alberto Mora',
-  'Sofía Ramírez','Diego Hernández','Valeria Castro','Andrés Mora',
-  'Isabella Rojas','Fernando Salazar','Paula Méndez','Ricardo Solano',
-  'Gabriela Fernández','Marco Antonio Vega','Laura Chinchilla','Roberto Brenes',
-  'Camila Araya','Sebastián Quesada','Daniela Calvo','Alejandro Jiménez',
-  'Natalia Vargas','Jorge Luis Araya','Patricia Mora','Miguel Ángel Solano',
-  'Carolina Herrera','Víctor Manuel Rojas','Adriana Fernández','Francisco José Calvo',
-  'Mónica Vargas','Luis Alberto Méndez','Silvia Chaves','Rodrigo Ramírez',
-  'Andrea Solano','Esteban Quesada','Claudia Jiménez','Óscar Arias',
-  'María José Castro','Pablo Herrera','Lucía Mora','Javier Salazar',
-  'Renata Vargas','Tomás Gutiérrez','Isabel Muñoz','Felipe Sánchez',
-  'Carmen Rosa Aguilar','Manuel de la Cruz','Elena Villalobos','Raúl Fonseca',
-  'Teresa Obregón','Guillermo Trejos','Rosa María Bolaños','Hernán Córdoba',
-  'Angélica Soto','Bernardo Esquivel','Dolores Madrigal','Emiliano Navarro',
-  'Florencia Segura','Gonzalo Picado','Herminia Ulloa','Ignacio Valverde',
-  'Julia Zamora','Kevin Montero','Lorena Barrios','Mauricio Coto',
-  'Nuria Delgado','Octavio Espinoza','Paloma Fajardo','Quirino Granados',
-  'Rafaela Hidalgo','Salvador Ibáñez','Ursula Jáuregui','Víctor Llobret',
-  'Wendy Marín','Xavier Núñez','Yolanda Ocampo','Zacarías Padilla',
-  'Amanda Quirós','Bautista Roldán','Cecilia Salinas','Demetrio Tovar',
-  'Elisa Ureña','Fabio Velásquez','Griselda Wang','Humberto Xavier',
-  'Irene Yáñez','Jacinto Zúñiga','Katia Arrieta','Leopoldo Blandón',
-  'Micaela Cordero','Néstor Dávila','Olga Elizondo','Pedro Flórez',
-  'Quintina Guevara','Román Henríquez','Susana Irías','Teodoro Jiménez',
-  'Úrsula Kopper','Valentín Leiva','Wendy Solís','Álvaro Brenes'
-];
-
-const provincias = ['San José', 'Alajuela', 'Cartago', 'Heredia', 'Guanacaste', 'Puntarenas', 'Limón'];
-
-// [cantidad 1kg, cantidad 340g] por frecuencia
-const grupos: {
-  cafeId: string;
-  sem: [number, number];
-  quin: [number, number];
-  mens: [number, number];
-}[] = [
-  { cafeId: 'm1',       sem: [6, 4], quin: [3, 2], mens: [2, 1] }, // 18
-  { cafeId: 'm2',       sem: [4, 5], quin: [2, 2], mens: [1, 1] }, // 15
-  { cafeId: 'm3',       sem: [3, 4], quin: [2, 1], mens: [1, 1] }, // 12
-  { cafeId: 'm4',       sem: [4, 5], quin: [2, 2], mens: [1, 1] }, // 15
-  { cafeId: 'm5',       sem: [3, 3], quin: [2, 2], mens: [1, 1] }, // 12
-  { cafeId: 'm6',       sem: [3, 3], quin: [1, 1], mens: [0, 0] }, //  8
-  { cafeId: 'sorpresa', sem: [6, 6], quin: [3, 3], mens: [1, 1] }  // 20
-];
-
-function construirSuscripciones(): Suscripcion[] {
-  const out: Suscripcion[] = [];
-  let idx = 0;
-
-  const agregar = (cafeId: string, frecuencia: Frecuencia, plan: Plan, cantidad: number) => {
-    for (let i = 0; i < cantidad; i++) {
-      const jueves = idx % 2 === 0;
-      let fecha = sumarDias(base, jueves ? 3 : 4);
-
-      // Media docena de mensuales ya vencen el mes que viene:
-      // permite demostrar el avance de frecuencia al cerrar la semana.
-      if (frecuencia === 'mensual' && i % 2 === 1) {
-        fecha = ajustarAlProximoDiaDespacho(sumarMeses(sumarDias(base, 3), 1));
-      }
-
-      out.push({
-        id: 's' + String(idx + 1).padStart(3, '0'),
-        nombre: nombres[idx % nombres.length],
-        provincia: provincias[idx % provincias.length],
-        plan,
-        frecuencia,
-        cafeId,
-        diaEnvio: jueves ? 'jueves' : 'viernes',
-        proximoEnvio: fecha,
-        activa: true
-      });
-      idx++;
-    }
-  };
-
-  grupos.forEach(g => {
-    agregar(g.cafeId, 'semanal', '1kg', g.sem[0]);
-    agregar(g.cafeId, 'semanal', '340g', g.sem[1]);
-    agregar(g.cafeId, 'quincenal', '1kg', g.quin[0]);
-    agregar(g.cafeId, 'quincenal', '340g', g.quin[1]);
-    agregar(g.cafeId, 'mensual', '1kg', g.mens[0]);
-    agregar(g.cafeId, 'mensual', '340g', g.mens[1]);
-  });
-
-  // Caso real de demostración 1: envío atrasado (jueves de la semana anterior).
-  // No computa en ninguna semana hasta que el tostador lo corrija.
-  out[17].proximoEnvio = sumarDias(base, -4);
-
-  // Caso real de demostración 2: próximo envío cae en lunes.
-  // La UI lo etiqueta y ofrece ajustarlo al próximo jueves/viernes.
-  // Sigue dentro de la semana, por lo que NO altera la demanda proyectada.
-  out[50].proximoEnvio = base;
-
-  return out;
-}
+const hoy = new Date().toISOString().split('T')[0];
+const lunesHoy = obtenerLunes(hoy);
 
 export const seedData: AppState = {
   microlotes: [
     { id: 'm1', nombre: 'Tarrazú lavado La Pastora', productor: 'Finca La Pastora', proceso: 'Lavado', mermaPct: 15, verdeDisponibleKg: 180, color: '#8B5E3C', sigla: 'TAR' },
-    { id: 'm2', nombre: 'West Valley Naranjo honey', productor: 'Finca Naranjo', proceso: 'Honey', mermaPct: 16, verdeDisponibleKg: 60, color: '#D4A373', sigla: 'WV' },
+    { id: 'm2', nombre: 'West Valley Naranjo honey', productor: 'Finca Naranjo', proceso: 'Honey', mermaPct: 16, verdeDisponibleKg: 40, color: '#D4A373', sigla: 'WV' },
     { id: 'm3', nombre: 'Brunca natural Pérez Zeledón', productor: 'Finca Brunca', proceso: 'Natural', mermaPct: 17, verdeDisponibleKg: 45, color: '#A98467', sigla: 'BRU' },
     { id: 'm4', nombre: 'Central Valley Poás lavado', productor: 'Finca Poás', proceso: 'Lavado', mermaPct: 14, verdeDisponibleKg: 120, color: '#6B8E23', sigla: 'CV' },
     { id: 'm5', nombre: 'Orosi anaeróbico', productor: 'Finca Orosi', proceso: 'Anaeróbico', mermaPct: 18, verdeDisponibleKg: 25, color: '#556B2F', sigla: 'ORO' },
     { id: 'm6', nombre: 'Guanacaste peaberry', productor: 'Finca Guanacaste', proceso: 'Lavado', mermaPct: 15, verdeDisponibleKg: 40, color: '#CD853F', sigla: 'GUA' }
   ],
-  suscripciones: construirSuscripciones(),
+  suscripciones: [
+    { id: 's1', nombre: 'María Fernanda Rodríguez', provincia: 'San José', plan: '340g', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's2', nombre: 'José Luis Vargas', provincia: 'Alajuela', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's3', nombre: 'Ana Lucía Jiménez', provincia: 'Cartago', plan: '340g', frecuencia: 'mensual', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's4', nombre: 'Carlos Alberto Mora', provincia: 'Heredia', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's5', nombre: 'Sofía Ramírez', provincia: 'Guanacaste', plan: '340g', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's6', nombre: 'Diego Hernández', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'mensual', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's7', nombre: 'Valeria Castro', provincia: 'Limón', plan: '340g', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's8', nombre: 'Andrés Mora', provincia: 'San José', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's9', nombre: 'Isabella Rojas', provincia: 'Alajuela', plan: '340g', frecuencia: 'mensual', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's10', nombre: 'Fernando Salazar', provincia: 'Cartago', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's11', nombre: 'Paula Méndez', provincia: 'Heredia', plan: '340g', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's12', nombre: 'Ricardo Solano', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'mensual', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's13', nombre: 'Gabriela Fernández', provincia: 'Puntarenas', plan: '340g', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's14', nombre: 'Marco Antonio Vega', provincia: 'Limón', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's15', nombre: 'Laura Chinchilla', provincia: 'San José', plan: '340g', frecuencia: 'mensual', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's16', nombre: 'Roberto Brenes', provincia: 'Alajuela', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's17', nombre: 'Camila Araya', provincia: 'Cartago', plan: '340g', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's18', nombre: 'Sebastián Quesada', provincia: 'Heredia', plan: '1kg', frecuencia: 'mensual', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's19', nombre: 'Daniela Calvo', provincia: 'Guanacaste', plan: '340g', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's20', nombre: 'Alejandro Jiménez', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm1', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's21', nombre: 'Natalia Vargas', provincia: 'Limón', plan: '340g', frecuencia: 'mensual', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's22', nombre: 'Jorge Luis Araya', provincia: 'San José', plan: '1kg', frecuencia: 'semanal', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's23', nombre: 'Patricia Mora', provincia: 'Alajuela', plan: '340g', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's24', nombre: 'Miguel Ángel Solano', provincia: 'Cartago', plan: '1kg', frecuencia: 'mensual', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's25', nombre: 'Carolina Herrera', provincia: 'Heredia', plan: '340g', frecuencia: 'semanal', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's26', nombre: 'Víctor Manuel Rojas', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's27', nombre: 'Adriana Fernández', provincia: 'Puntarenas', plan: '340g', frecuencia: 'mensual', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's28', nombre: 'Francisco José Calvo', provincia: 'Limón', plan: '1kg', frecuencia: 'semanal', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's29', nombre: 'Mónica Vargas', provincia: 'San José', plan: '340g', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's30', nombre: 'Luis Alberto Méndez', provincia: 'Alajuela', plan: '1kg', frecuencia: 'mensual', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's31', nombre: 'Silvia Chaves', provincia: 'Cartago', plan: '340g', frecuencia: 'semanal', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's32', nombre: 'Rodrigo Ramírez', provincia: 'Heredia', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's33', nombre: 'Andrea Solano', provincia: 'Guanacaste', plan: '340g', frecuencia: 'mensual', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's34', nombre: 'Esteban Quesada', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'semanal', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's35', nombre: 'Claudia Jiménez', provincia: 'Limón', plan: '340g', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's36', nombre: 'Óscar Arias', provincia: 'San José', plan: '1kg', frecuencia: 'mensual', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's37', nombre: 'María José Castro', provincia: 'Alajuela', plan: '340g', frecuencia: 'semanal', cafeId: 'm2', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's38', nombre: 'Pablo Herrera', provincia: 'Cartago', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's39', nombre: 'Lucía Mora', provincia: 'Heredia', plan: '340g', frecuencia: 'mensual', cafeId: 'm3', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's40', nombre: 'Javier Salazar', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'semanal', cafeId: 'm3', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's41', nombre: 'Renata Vargas', provincia: 'Puntarenas', plan: '340g', frecuencia: 'quincenal', cafeId: 'm3', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's42', nombre: 'Tomás Gutiérrez', provincia: 'Limón', plan: '1kg', frecuencia: 'mensual', cafeId: 'm3', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's43', nombre: 'Isabel Muñoz', provincia: 'San José', plan: '340g', frecuencia: 'semanal', cafeId: 'm3', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's44', nombre: 'Felipe Sánchez', provincia: 'Alajuela', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm3', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's45', nombre: 'Carmen Rosa Aguilar', provincia: 'Cartago', plan: '340g', frecuencia: 'mensual', cafeId: 'm3', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's46', nombre: 'Manuel de la Cruz', provincia: 'Heredia', plan: '1kg', frecuencia: 'semanal', cafeId: 'm3', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's47', nombre: 'Elena Villalobos', provincia: 'Guanacaste', plan: '340g', frecuencia: 'quincenal', cafeId: 'm3', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's48', nombre: 'Raúl Fonseca', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'mensual', cafeId: 'm3', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's49', nombre: 'Teresa Obregón', provincia: 'Limón', plan: '340g', frecuencia: 'semanal', cafeId: 'm3', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's50', nombre: 'Guillermo Trejos', provincia: 'San José', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm3', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's51', nombre: 'Rosa María Bolaños', provincia: 'Alajuela', plan: '340g', frecuencia: 'mensual', cafeId: 'm3', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's52', nombre: 'Hernán Córdoba', provincia: 'Cartago', plan: '1kg', frecuencia: 'semanal', cafeId: 'm3', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's53', nombre: 'Angélica Soto', provincia: 'Heredia', plan: '340g', frecuencia: 'quincenal', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's54', nombre: 'Bernardo Esquivel', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'mensual', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's55', nombre: 'Dolores Madrigal', provincia: 'Puntarenas', plan: '340g', frecuencia: 'semanal', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's56', nombre: 'Emiliano Navarro', provincia: 'Limón', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's57', nombre: 'Florencia Segura', provincia: 'San José', plan: '340g', frecuencia: 'mensual', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's58', nombre: 'Gonzalo Picado', provincia: 'Alajuela', plan: '1kg', frecuencia: 'semanal', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's59', nombre: 'Herminia Ulloa', provincia: 'Cartago', plan: '340g', frecuencia: 'quincenal', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's60', nombre: 'Ignacio Valverde', provincia: 'Heredia', plan: '1kg', frecuencia: 'mensual', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's61', nombre: 'Julia Zamora', provincia: 'Guanacaste', plan: '340g', frecuencia: 'semanal', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's62', nombre: 'Kevin Montero', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's63', nombre: 'Lorena Barrios', provincia: 'Limón', plan: '340g', frecuencia: 'mensual', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's64', nombre: 'Mauricio Coto', provincia: 'San José', plan: '1kg', frecuencia: 'semanal', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's65', nombre: 'Nuria Delgado', provincia: 'Alajuela', plan: '340g', frecuencia: 'quincenal', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's66', nombre: 'Octavio Espinoza', provincia: 'Cartago', plan: '1kg', frecuencia: 'mensual', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's67', nombre: 'Paloma Fajardo', provincia: 'Heredia', plan: '340g', frecuencia: 'semanal', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's68', nombre: 'Quirino Granados', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's69', nombre: 'Rafaela Hidalgo', provincia: 'Puntarenas', plan: '340g', frecuencia: 'mensual', cafeId: 'm4', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's70', nombre: 'Salvador Ibáñez', provincia: 'Limón', plan: '1kg', frecuencia: 'semanal', cafeId: 'm4', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's71', nombre: 'Ursula Jáuregui', provincia: 'San José', plan: '340g', frecuencia: 'quincenal', cafeId: 'm5', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's72', nombre: 'Víctor Llobret', provincia: 'Alajuela', plan: '1kg', frecuencia: 'mensual', cafeId: 'm5', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's73', nombre: 'Wendy Marín', provincia: 'Cartago', plan: '340g', frecuencia: 'semanal', cafeId: 'm5', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's74', nombre: 'Xavier Núñez', provincia: 'Heredia', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm5', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's75', nombre: 'Yolanda Ocampo', provincia: 'Guanacaste', plan: '340g', frecuencia: 'mensual', cafeId: 'm5', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's76', nombre: 'Zacarías Padilla', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'semanal', cafeId: 'm5', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's77', nombre: 'Amanda Quirós', provincia: 'Limón', plan: '340g', frecuencia: 'quincenal', cafeId: 'm5', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's78', nombre: 'Bautista Roldán', provincia: 'San José', plan: '1kg', frecuencia: 'mensual', cafeId: 'm5', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's79', nombre: 'Cecilia Salinas', provincia: 'Alajuela', plan: '340g', frecuencia: 'semanal', cafeId: 'm5', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's80', nombre: 'Demetrio Tovar', provincia: 'Cartago', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm5', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's81', nombre: 'Elisa Ureña', provincia: 'Heredia', plan: '340g', frecuencia: 'mensual', cafeId: 'm6', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's82', nombre: 'Fabio Velásquez', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'semanal', cafeId: 'm6', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's83', nombre: 'Griselda Wang', provincia: 'Puntarenas', plan: '340g', frecuencia: 'quincenal', cafeId: 'm6', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's84', nombre: 'Humberto Xavier', provincia: 'Limón', plan: '1kg', frecuencia: 'mensual', cafeId: 'm6', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's85', nombre: 'Irene Yáñez', provincia: 'San José', plan: '340g', frecuencia: 'semanal', cafeId: 'm6', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's86', nombre: 'Jacinto Zúñiga', provincia: 'Alajuela', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm6', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's87', nombre: 'Katia Arrieta', provincia: 'Cartago', plan: '340g', frecuencia: 'mensual', cafeId: 'm6', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's88', nombre: 'Leopoldo Blandón', provincia: 'Heredia', plan: '1kg', frecuencia: 'semanal', cafeId: 'm6', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's89', nombre: 'Micaela Cordero', provincia: 'Guanacaste', plan: '340g', frecuencia: 'quincenal', cafeId: 'm6', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's90', nombre: 'Néstor Dávila', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'mensual', cafeId: 'm6', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's91', nombre: 'Olga Elizondo', provincia: 'Limón', plan: '340g', frecuencia: 'semanal', cafeId: 'm6', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's92', nombre: 'Pedro Flórez', provincia: 'San José', plan: '1kg', frecuencia: 'quincenal', cafeId: 'm6', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's93', nombre: 'Quintina Guevara', provincia: 'Alajuela', plan: '340g', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's94', nombre: 'Román Henríquez', provincia: 'Cartago', plan: '1kg', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's95', nombre: 'Susana Irías', provincia: 'Heredia', plan: '340g', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's96', nombre: 'Teodoro Jiménez', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's97', nombre: 'Úrsula Kopper', provincia: 'Puntarenas', plan: '340g', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's98', nombre: 'Valentín Leiva', provincia: 'Limón', plan: '1kg', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's99', nombre: 'Wendy Solís', provincia: 'San José', plan: '340g', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's100', nombre: 'Álvaro Brenes', provincia: 'Alajuela', plan: '1kg', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's101', nombre: 'Alejandra Brenes', provincia: 'Cartago', plan: '340g', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's102', nombre: 'Carlos Eduardo Mora', provincia: 'Heredia', plan: '1kg', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's103', nombre: 'Diana Patricia Solano', provincia: 'Guanacaste', plan: '340g', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's104', nombre: 'Eduardo José Vargas', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's105', nombre: 'Fabiola María Jiménez', provincia: 'Limón', plan: '340g', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's106', nombre: 'Gabriel Antonio Rojas', provincia: 'San José', plan: '1kg', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's107', nombre: 'Helena Sofía Castro', provincia: 'Alajuela', plan: '340g', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's108', nombre: 'Iván Mauricio Herrera', provincia: 'Cartago', plan: '1kg', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's109', nombre: 'Julia Carolina Méndez', provincia: 'Heredia', plan: '340g', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's110', nombre: 'Kevin Andrés Quesada', provincia: 'Guanacaste', plan: '1kg', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's111', nombre: 'Laura Isabel Fernández', provincia: 'Puntarenas', plan: '340g', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's112', nombre: 'Miguel Ángel Vega', provincia: 'Limón', plan: '1kg', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 9), activa: true },
+    { id: 's113', nombre: 'Natalia Andrea Chinchilla', provincia: 'San José', plan: '340g', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 3), activa: true },
+    { id: 's114', nombre: 'Óscar David Brenes', provincia: 'Alajuela', plan: '1kg', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 4), activa: true },
+    { id: 's115', nombre: 'Patricia Elena Araya', provincia: 'Cartago', plan: '340g', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 5), activa: true },
+    { id: 's116', nombre: 'Ricardo José Salazar', provincia: 'Heredia', plan: '1kg', frecuencia: 'quincenal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 6), activa: true },
+    { id: 's117', nombre: 'Sandra Milena Calvo', provincia: 'Guanacaste', plan: '340g', frecuencia: 'mensual', cafeId: 'sorpresa', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, 7), activa: true },
+    { id: 's118', nombre: 'Tomás Alejandro Mora', provincia: 'Puntarenas', plan: '1kg', frecuencia: 'semanal', cafeId: 'sorpresa', diaEnvio: 'viernes', proximoEnvio: sumarDias(lunesHoy, 8), activa: true },
+    { id: 's119', nombre: 'Caso Atrasado', provincia: 'San José', plan: '1kg', frecuencia: 'semanal', cafeId: 'm1', diaEnvio: 'jueves', proximoEnvio: sumarDias(lunesHoy, -4), activa: true },
+    { id: 's120', nombre: 'Caso Día Inválido', provincia: 'Heredia', plan: '340g', frecuencia: 'quincenal', cafeId: 'm2', diaEnvio: 'lunes', proximoEnvio: lunesHoy, activa: true }
+  ],
   config: {
     capacidadTandaKg: 12,
     diasTueste: ['lunes', 'miércoles'],
