@@ -118,6 +118,19 @@ export default function MasView({ state, updateState, resetData, onLogout }: Pro
     { id: 'datos' as const, label: 'Datos' }
   ];
 
+  const limpiarDatos = () => {
+    if (!window.confirm('¿Limpiar TODOS los datos? Se pondrán las suscripciones y el inventario a cero. Podrás recuperar los ejemplos con el botón de abajo.')) return;
+    updateState({
+      microlotes: state.microlotes.map(m => ({ ...m, verdeDisponibleKg: 0 })),
+      suscripciones: [],
+      config: { capacidadTandaKg: 12, maxTandasPorDia: 6, horizonteSemanas: 4, diasTueste: ['lunes'] },
+      sorpresaPorDefecto: 'm2',
+      sorpresaPorSemana: {},
+      semanasEnviadas: [],
+      historialCompras: []
+    });
+  };
+
   return (
     <div className="p-4 space-y-4">
       <h2 className="font-display font-bold text-2xl text-cafe">Ajustes de la tostaduría</h2>
@@ -212,10 +225,23 @@ export default function MasView({ state, updateState, resetData, onLogout }: Pro
             </dl>
           </div>
 
+          <div className="bg-cafe/5 border border-cafe/20 rounded-xl p-4 space-y-3">
+            <h3 className="font-bold text-cafe">Limpiar datos de la tostaduría</h3>
+            <p className="text-xs text-cafe-dark/60">
+              Pone el inventario y las suscripciones a cero, y deja solo un día de tueste base. Ideal para empezar de cero sin perder la configuración base.
+            </p>
+            <button
+              onClick={limpiarDatos}
+              className="w-full min-h-[44px] rounded-lg border-2 border-alerta text-alerta text-sm font-bold hover:bg-alerta hover:text-white transition-colors active:scale-[0.99]"
+            >
+              🗑️ Limpiar todos los datos
+            </button>
+          </div>
+
           <div className="bg-alerta/10 border border-alerta rounded-xl p-4 space-y-3">
             <h3 className="font-bold text-alerta">Restaurar datos de ejemplo</h3>
             <p className="text-xs text-alerta">
-              Borra los cambios locales y vuelve a las 100 suscripciones y los 6 microlotes originales. Esta acción no se puede deshacer.
+              Borra los cambios locales y vuelve a las 120 suscripciones y los 6 microlotes originales. Esta acción no se puede deshacer.
             </p>
             <button
               onClick={() => { if (window.confirm('¿Restaurar todos los datos de ejemplo? Se perderán los cambios realizados.')) resetData(); }}

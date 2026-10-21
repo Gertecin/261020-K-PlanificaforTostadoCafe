@@ -17,6 +17,25 @@ export default function SuscripcionesView({ state, updateState }: Props) {
   const [fFreq, setFFreq] = useState('todas');
   const [fEstado, setFEstado] = useState('todos');
   const [editando, setEditando] = useState<Suscripcion | null>(null);
+
+  // Contar suscriptores fuera de fecha (atrasados o día inválido)
+  const fueraDeFecha = state.suscripciones.filter(s => s.activa && (!esDiaDespacho(s.proximoEnvio) || s.proximoEnvio < lunesActual()));
+
+  // Ajustar todos los fuera de fecha
+  const ajustarTodos = () => {
+    if (!fueraDeFecha.length) return;
+    if (!window.confirm(`¿Ajustar ${fueraDeFecha.length} suscriptor(es) fuera de fecha al próximo jueves o viernes?`)) return;
+    updateState(prev => ({
+      ...prev,
+      suscripciones: prev.suscripciones.map(s => {
+        if (!s.activa) return s;
+        if (!esDiaDespacho(s.proximoEnvio) || s.proximoEnvio < lunesActual()) {
+          return { ...s, proximoEnvio: ajustarAlProximoDiaDespacho(s.proximoEnvio) };
+        }
+        return s;
+      })
+    }));
+  };
   const [error, setError] = useState('');
 
   const nuevo = (): Suscripcion => ({
@@ -70,6 +89,11 @@ export default function SuscripcionesView({ state, updateState }: Props) {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-display font-bold text-2xl text-cafe">Suscripciones</h2>
+          {fueraDeFecha.length > 0 && (
+            <button onClick={ajustarTodos} className="mt-2 min-h-[44px] px-3 rounded-lg bg-alerta text-white text-xs font-bold active:opacity-90 flex items-center gap-1">
+              <span>🔄</span> Ajustar {fueraDeFecha.length} atrasado(s)
+            </button>
+          )}
         <button onClick={() => { setEditando(nuevo()); setError(''); }} className="min-h-[44px] px-4 rounded-lg bg-cafetal text-white text-sm font-bold active:scale-95">
           + Alta
         </button>
